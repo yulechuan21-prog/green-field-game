@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>阿卡夏之光 v2.0</title>
+    <title>阿卡夏之光 v2.0 - 全域进化模拟器</title>
     <style>
         :root {
             --bg-dark: #0f1115;
@@ -27,16 +27,49 @@
             overflow: hidden;
         }
 
+        /* --- 通用动画 --- */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulseGlow { 0% { box-shadow: 0 0 5px var(--primary-accent); } 50% { box-shadow: 0 0 20px var(--primary-accent); } 100% { box-shadow: 0 0 5px var(--primary-accent); } }
+
+        /* ==================== 登录/创建角色界面 ==================== */
+        #creation-ui {
+            flex: 1; display: flex; flex-direction: column; 
+            padding: 30px 20px; overflow-y: auto;
+            background: radial-gradient(circle at center, #1a202c 0%, var(--bg-dark) 100%);
+        }
+        .creation-title {
+            text-align: center; color: var(--primary-accent);
+            font-size: 1.8rem; margin-bottom: 10px; font-weight: bold;
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+        }
+        .creation-subtitle {
+            text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 30px;
+        }
+        .form-group { margin-bottom: 20px; animation: fadeIn 0.5s ease backwards; }
+        .form-group label {
+            display: block; color: var(--primary-accent); font-size: 0.9rem; margin-bottom: 8px;
+        }
+        .form-group input, .form-group select {
+            width: 100%; padding: 12px; background-color: var(--panel-bg);
+            border: 1px solid var(--border-color); color: white;
+            border-radius: 8px; outline: none; transition: border 0.3s;
+            font-size: 1rem;
+        }
+        .form-group input:focus, .form-group select:focus { border-color: var(--primary-accent); }
+        .btn-start {
+            width: 100%; padding: 15px; margin-top: 10px;
+            background-color: var(--primary-accent); color: #000;
+            border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold;
+            cursor: pointer; animation: pulseGlow 3s infinite;
+        }
+
+        /* ==================== 主游戏界面 ==================== */
+        #game-ui { display: none; flex-direction: column; height: 100vh; }
+
         /* 顶部状态栏 */
         .status-bar {
-            background-color: var(--panel-bg);
-            padding: 15px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-            z-index: 10;
+            background-color: var(--panel-bg); padding: 15px; border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center; z-index: 10;
         }
         .status-item { text-align: center; }
         .status-label { font-size: 0.75rem; color: var(--text-muted); }
@@ -44,271 +77,326 @@
         .cep-value { font-size: 1.3rem; color: #ffbc00; text-shadow: 0 0 5px rgba(255,188,0,0.5); }
 
         /* 主内容区 */
-        .main-content {
-            flex: 1;
-            overflow-y: auto;
-            position: relative;
-            padding-bottom: 20px;
-        }
+        .main-content { flex: 1; overflow-y: auto; position: relative; }
 
         /* 视图容器 (用于选项卡切换) */
         .view-section { display: none; padding: 15px; animation: fadeIn 0.3s ease; }
         .view-section.active { display: block; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* --- 事件视图 (文字冒险) --- */
+        /* --- 事件 (Events) --- */
         #view-events { padding: 0; display: flex; flex-direction: column; height: 100%; }
         .chat-container { flex: 1; overflow-y: auto; padding: 15px; }
         .message { margin-bottom: 15px; max-width: 90%; line-height: 1.5; font-size: 0.95rem; }
         .msg-system {
-            background: rgba(0, 210, 255, 0.1);
-            border-left: 3px solid var(--primary-accent);
-            padding: 10px;
-            color: #b3ebff;
-            align-self: flex-start;
+            background: rgba(0, 210, 255, 0.1); border-left: 3px solid var(--primary-accent);
+            padding: 10px; color: #b3ebff; align-self: flex-start;
         }
         .msg-user {
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            padding: 10px;
-            border-radius: 8px;
-            align-self: flex-end;
-            margin-left: auto;
-            color: #fff;
+            background: var(--panel-bg); border: 1px solid var(--border-color);
+            padding: 10px; border-radius: 8px; align-self: flex-end; margin-left: auto; color: #fff;
         }
-        .msg-voice {
-            color: #ffcc00; font-weight: bold; font-size: 0.85rem; margin-bottom: 5px;
-        }
+        .msg-voice { color: #ffcc00; font-weight: bold; font-size: 0.85rem; margin-bottom: 5px; }
+        .msg-loading { color: var(--text-muted); font-style: italic; }
 
         /* 输入区 */
         .input-area {
-            background-color: var(--panel-bg);
-            padding: 10px 15px;
-            display: flex;
-            gap: 10px;
-            border-top: 1px solid var(--border-color);
+            background-color: var(--panel-bg); padding: 10px 15px;
+            display: flex; gap: 10px; border-top: 1px solid var(--border-color);
         }
         .input-area input {
-            flex: 1;
-            background-color: var(--bg-dark);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 10px;
-            border-radius: 20px;
-            outline: none;
+            flex: 1; background-color: var(--bg-dark); border: 1px solid var(--border-color);
+            color: var(--text-main); padding: 10px; border-radius: 20px; outline: none;
         }
         .input-area button {
-            background-color: var(--primary-accent);
-            color: #000;
-            border: none;
-            padding: 0 20px;
-            border-radius: 20px;
-            font-weight: bold;
+            background-color: var(--primary-accent); color: #000; border: none;
+            padding: 0 20px; border-radius: 20px; font-weight: bold; cursor: pointer;
         }
 
-        /* --- 面板与系统视图 --- */
+        /* --- 面板 (Panel) & 系统 (System) & 组织 (Social) 卡片样式 --- */
         .card {
-            background-color: var(--panel-bg);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            border: 1px solid var(--border-color);
+            background-color: var(--panel-bg); border-radius: 8px; padding: 15px;
+            margin-bottom: 15px; border: 1px solid var(--border-color);
         }
         .card-title {
-            font-size: 1rem;
-            color: var(--primary-accent);
-            margin-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 5px;
+            font-size: 1rem; color: var(--primary-accent); margin-bottom: 10px;
+            border-bottom: 1px solid var(--border-color); padding-bottom: 5px;
         }
-        .skill-list { list-style: none; }
         .skill-item {
-            display: flex; justify-content: space-between;
-            padding: 8px 0; border-bottom: 1px dashed var(--border-color);
-            font-size: 0.9rem;
+            display: flex; justify-content: space-between; padding: 8px 0;
+            border-bottom: 1px dashed var(--border-color); font-size: 0.9rem;
         }
         .skill-item:last-child { border-bottom: none; }
-        .badge {
-            font-size: 0.7rem; padding: 2px 6px; border-radius: 4px;
-            background: rgba(255,255,255,0.1);
-        }
+        .badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1); }
         .badge.ultimate { background: #ff3366; color: #fff; }
         .badge.unique { background: #b366ff; color: #fff; }
 
         /* 底部导航 */
         .bottom-nav {
-            background-color: var(--panel-bg);
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            border-top: 1px solid var(--border-color);
+            background-color: var(--panel-bg); display: flex; justify-content: space-around;
+            padding: 10px 0; border-top: 1px solid var(--border-color); padding-bottom: max(10px, env(safe-area-inset-bottom));
         }
-        .nav-item {
-            color: var(--text-muted);
-            text-align: center;
-            font-size: 0.8rem;
-            flex: 1;
-            padding: 5px 0;
-            transition: color 0.3s;
-        }
+        .nav-item { color: var(--text-muted); text-align: center; font-size: 0.8rem; flex: 1; padding: 5px 0; transition: color 0.3s; cursor: pointer;}
         .nav-item.active { color: var(--primary-accent); font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="status-bar">
-        <div class="status-item">
-            <div class="status-label">综合战力 (CEP)</div>
-            <div class="status-value cep-value" id="ui-cep">450</div>
+    <div id="creation-ui">
+        <div class="creation-title">阿卡夏之门</div>
+        <div class="creation-subtitle">圣言演算已就绪，请确立你的降生档案</div>
+
+        <div class="form-group" style="animation-delay: 0.1s;">
+            <label>真名 (Name)</label>
+            <input type="text" id="char-name" placeholder="输入你的名字..." value="Tom">
         </div>
-        <div class="status-item">
-            <div class="status-label">HP / 魔素</div>
-            <div class="status-value">100% / 150</div>
+
+        <div class="form-group" style="animation-delay: 0.2s;">
+            <label>种族/职业选择 (Race / Class)</label>
+            <select id="char-race">
+                <optgroup label="人类侧">
+                    <option value="落魄炼金术师">落魄炼金术师 (科技与魔法融合)</option>
+                    <option value="教会见习修女">教会见习修女 (神圣魔法/受难起步)</option>
+                    <option value="帝国重装盾卫">帝国重装盾卫 (极致防御/反伤流)</option>
+                </optgroup>
+                <optgroup label="魔兽侧">
+                    <option value="变异幼蛛">变异幼蛛 (迷宫求生/毒系刺客)</option>
+                    <option value="白色史莱姆">白色史莱姆 (吞噬万物/无限成长)</option>
+                    <option value="深渊地龙幼体">深渊地龙幼体 (绝对力量/魔抗外壳)</option>
+                </optgroup>
+            </select>
         </div>
-        <div class="status-item">
-            <div class="status-label">阶级</div>
-            <div class="status-value" id="ui-rank">E 灾害级</div>
+
+        <div class="form-group" style="animation-delay: 0.3s;">
+            <label>核心“独特技能” (Unique Skill)</label>
+            <input type="text" id="char-skill" placeholder="例如：【暴食者】或【炼成】">
         </div>
+
+        <div class="form-group" style="animation-delay: 0.4s;">
+            <label>初始性格与倾向 (Personality)</label>
+            <input type="text" id="char-personality" placeholder="例如：冷酷无情，或是追求共存">
+        </div>
+
+        <div class="form-group" style="animation-delay: 0.5s;">
+            <label>降生地选择 (Starting Location)</label>
+            <select id="char-location">
+                <option value="艾尔罗大迷宫·最底层">艾尔罗大迷宫·最底层 (极致受苦/魔兽横行)</option>
+                <option value="梅洛马格王国·地下监狱">梅洛马格王国·地下监狱 (背叛/绝境逢生)</option>
+                <option value="鸠拉大森林·无名洞窟">鸠拉大森林·无名洞窟 (资源丰富/危机四伏)</option>
+                <option value="神圣帝国·祭祀高塔">神圣帝国·祭祀高塔 (权力旋涡/异端审判)</option>
+            </select>
+        </div>
+
+        <button class="btn-start" onclick="startGame()" style="animation-delay: 0.6s;">链接阿卡夏记录</button>
     </div>
 
-    <div class="main-content">
+    <div id="game-ui">
         
-        <div id="view-events" class="view-section active">
-            <div class="chat-container" id="chat-box">
-                <div class="message msg-system">
-                    <div class="msg-voice">【世界之声】</div>
-                    圣言演算已就绪。检测到灵魂波动，你的转生进程已经开启。在这个世界，没有绝对的废柴，只有不敢直面死亡的懦夫。你想以哪种姿态，迎接初次鸣响？
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-label">综合战力 (CEP)</div>
+                <div class="status-value cep-value" id="ui-cep">10</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">HP / 魔素</div>
+                <div class="status-value">100% / 50</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">阶级</div>
+                <div class="status-value" id="ui-rank">F 尘埃级</div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            
+            <div id="view-events" class="view-section active">
+                <div class="chat-container" id="chat-box">
+                    </div>
+                <div class="input-area">
+                    <input type="text" id="user-input" placeholder="输入你的行动或对话...">
+                    <button onclick="sendAction()">执行</button>
                 </div>
             </div>
-            <div class="input-area">
-                <input type="text" id="user-input" placeholder="输入你的指令或对话...">
-                <button onclick="sendMessage()">交互</button>
+
+            <div id="view-panel" class="view-section">
+                <div class="card">
+                    <div class="card-title">基本信息</div>
+                    <div class="skill-item"><span>真名</span><span id="panel-name">-</span></div>
+                    <div class="skill-item"><span>种族</span><span id="panel-race">-</span></div>
+                    <div class="skill-item"><span>性格倾向</span><span id="panel-personality">-</span></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">技能矩阵</div>
+                    <ul class="skill-list" id="ui-skills">
+                        <li class="skill-item"><span id="panel-unique-skill">独特技能 <span class="badge unique">独特</span></span><span>Lv.1</span></li>
+                        <li class="skill-item"><span>生存本能 <span class="badge">通用</span></span><span>Lv.1</span></li>
+                    </ul>
+                </div>
             </div>
+
+            <div id="view-system" class="view-section">
+                <div class="card">
+                    <div class="card-title">受苦抗性系统 (Resistance)</div>
+                    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">受到伤害未死亡即可积累熟练度。</p>
+                    <ul class="skill-list" id="ui-resistances">
+                        <li class="skill-item"><span>暂无抗性数据</span><span>进度 0/100</span></li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <div class="card-title">技能融合炉</div>
+                    <p style="font-size:0.8rem; color:var(--text-muted);">暂无满级可共鸣技能。</p>
+                </div>
+            </div>
+
+            <div id="view-social" class="view-section">
+                <div class="card">
+                    <div class="card-title">阵营与羁绊共鸣</div>
+                    <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px;">目前状态：无从属链路或工会籍约。</p>
+                    <div class="skill-item"><span>工会声望 / 部落等级</span><span>0 (籍籍无名)</span></div>
+                </div>
+            </div>
+
         </div>
 
-        <div id="view-panel" class="view-section">
-            <div class="card">
-                <div class="card-title">基础档案</div>
-                <div class="skill-item"><span>种族</span><span>变异幼蛛 (魔兽侧)</span></div>
-                <div class="skill-item"><span>称号</span><span class="badge">尘埃级</span></div>
-            </div>
-            <div class="card">
-                <div class="card-title">技能矩阵 (四维体系)</div>
-                <ul class="skill-list" id="ui-skills">
-                    <li class="skill-item"><span>毒丝射击 <span class="badge">通用</span></span><span>Lv.1</span></li>
-                    <li class="skill-item"><span>魔力感知 <span class="badge">追加</span></span><span>Lv.1</span></li>
-                    <li class="skill-item"><span>睿智 <span class="badge unique">独特</span></span><span>Max</span></li>
-                </ul>
-            </div>
-            <div class="card">
-                <div class="card-title">受苦抗性系统</div>
-                <ul class="skill-list" id="ui-resistances">
-                    <li class="skill-item"><span>物理抗性：斩</span><span>进度 12/100</span></li>
-                </ul>
-            </div>
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('events', this)">事件</div>
+            <div class="nav-item" onclick="switchTab('panel', this)">面板</div>
+            <div class="nav-item" onclick="switchTab('system', this)">系统</div>
+            <div class="nav-item" onclick="switchTab('social', this)">组织</div>
         </div>
-
-        <div id="view-system" class="view-section">
-            <div class="card">
-                <div class="card-title">进化路线 (十字路口)</div>
-                <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:10px;">当魔素充盈到临界点，世界之声将开启分支。</p>
-                <div class="skill-item"><span>【偏向：速度】</span><span>死神之影</span></div>
-                <div class="skill-item"><span>【偏向：魔法】</span><span>属性蜘蛛</span></div>
-            </div>
-            <div class="card">
-                <div class="card-title">技能融合炉</div>
-                <p style="font-size:0.85rem; color:var(--text-muted);">暂无满级可共鸣技能。</p>
-            </div>
-        </div>
-
-        <div id="view-social" class="view-section">
-            <div class="card">
-                <div class="card-title">部落系统 / 共鸣之链</div>
-                <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:10px;">目前状态：无从属链路。建立部落需达到【魔王种】阶级。</p>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="bottom-nav">
-        <div class="nav-item active" onclick="switchTab('events', this)">事件</div>
-        <div class="nav-item" onclick="switchTab('panel', this)">面板</div>
-        <div class="nav-item" onclick="switchTab('system', this)">系统</div>
-        <div class="nav-item" onclick="switchTab('social', this)">组织</div>
     </div>
 
     <script>
-        // 选项卡切换逻辑
+        // --- UI 切换逻辑 ---
         function switchTab(tabId, element) {
-            document.querySelectorAll('.view-section').forEach(el => {
-                el.classList.remove('active');
-            });
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById('view-' + tabId).classList.add('active');
             
-            document.querySelectorAll('.nav-item').forEach(el => {
-                el.classList.remove('active');
-            });
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             element.classList.add('active');
 
-            if(tabId === 'events') {
-                scrollToBottom();
-            }
+            if(tabId === 'events') { scrollToBottom(); }
         }
 
-        // 核心交互逻辑 (需对接后端 AI API)
+        function scrollToBottom() {
+            const chatBox = document.getElementById('chat-box');
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
         const chatBox = document.getElementById('chat-box');
         const userInput = document.getElementById('user-input');
 
-        // 监听回车键
         userInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') { sendMessage(); }
+            if (e.key === 'Enter') { sendAction(); }
         });
 
-        function sendMessage() {
+        // --- 游戏流程：创建角色并开始 ---
+        async function startGame() {
+            // 1. 获取输入数据
+            const name = document.getElementById('char-name').value || "无名者";
+            const race = document.getElementById('char-race').value;
+            const skill = document.getElementById('char-skill').value || "【绝对生存】";
+            const personality = document.getElementById('char-personality').value || "随机适应";
+            const location = document.getElementById('char-location').value;
+
+            // 2. 更新个人面板 UI
+            document.getElementById('panel-name').innerText = name;
+            document.getElementById('panel-race').innerText = race;
+            document.getElementById('panel-personality').innerText = personality;
+            document.getElementById('panel-unique-skill').innerHTML = `${skill} <span class="badge unique">独特</span>`;
+
+            // 3. 切换界面
+            document.getElementById('creation-ui').style.display = 'none';
+            document.getElementById('game-ui').style.display = 'flex';
+
+            // 4. 组装初始系统 Prompt
+            const initPrompt = `【系统指令：强制初始化】
+玩家已建立阿卡夏降生档案：
+- 真名：${name}
+- 种族/职业：${race}
+- 独特技能：${skill}
+- 性格倾向：${personality}
+- 降生地：${location}
+
+请作为“世界之声”进行开局播报。你需要：
+1. 用冷酷且带有神性系统感的语调欢迎玩家。
+2. 简短描述降生地点的恶劣环境。
+3. 立即为玩家安排一场符合其等级（F尘埃级）的突发危机（例如遭遇低阶魔物、狱卒殴打、或陷阱伤害），逼迫玩家做出第一个生存抉择以触发“受苦抗性”。
+4. 在结尾明确询问玩家的下一步行动。`;
+
+            // 5. 显示系统正在初始化的状态，并调用 AI
+            appendMessage("【世界之声】 正在建立灵魂链接... 正在将意识注入阿卡夏记录...", "system");
+            await processAIInteraction(initPrompt, true);
+        }
+
+        // --- 游戏流程：玩家发送行动 ---
+        async function sendAction() {
             const text = userInput.value.trim();
             if (!text) return;
 
-            // 渲染用户输入
+            // 渲染玩家输入
             appendMessage(text, 'user');
             userInput.value = '';
-            scrollToBottom();
 
-            // 模拟 AI 思考延迟与“世界之声”回复
-            // 【合伙人提示】：在这里，你需要通过 fetch() 调用你的 Netlify Function，将 text 发送给大模型，并等待返回结果。
-            setTimeout(() => {
-                const mockAiResponse = `《检测到指令介入》\n解析你的行为...你选择以魔兽姿态降生。艾尔罗大迷宫底层的阴风阵阵，你的 CEP 战力初步演算完成。你需要尽快捕猎获取魔素。前方出现了一只劣等青蛙，你的【生存本能】正在报警。`;
-                appendMessage(mockAiResponse, 'system');
-                updatePanelData(); // 模拟数据更新
-            }, 1000);
+            // 调用 AI
+            await processAIInteraction(text, false);
         }
 
+        // --- 核心 API 调用函数 (原 gemini.js 逻辑合并于此) ---
+        async function processAIInteraction(messageText, isSystemInit = false) {
+            // 渲染等待提示
+            const loadingId = 'loading-' + Date.now();
+            const loadingHtml = `<div id="${loadingId}" class="message msg-system msg-loading">《圣言演算中，请稍候...》</div>`;
+            chatBox.insertAdjacentHTML('beforeend', loadingHtml);
+            scrollToBottom();
+
+            try {
+                // 【合伙人重要提示】：
+                // 这里我们依然采用 fetch 访问 Netlify Function（/.netlify/functions/gemini），
+                // 这是为了绝对确保你的大模型 API 密钥不被前端泄露！
+                const response = await fetch('/.netlify/functions/gemini', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: messageText })
+                });
+
+                if (!response.ok) { throw new Error(`HTTP error! status: ${response.status}`); }
+
+                const data = await response.json();
+                
+                // 移除等待提示并渲染 AI 回复
+                document.getElementById(loadingId).remove();
+                appendMessage(data.reply, 'system');
+
+                // 如果不是初始化，可以增加一点 CEP 战力作为反馈
+                if (!isSystemInit) {
+                    const cepEl = document.getElementById('ui-cep');
+                    cepEl.innerText = parseInt(cepEl.innerText) + Math.floor(Math.random() * 5) + 1;
+                }
+
+            } catch (error) {
+                console.error("通讯失败:", error);
+                document.getElementById(loadingId).remove();
+                appendMessage("《警告：由于魔素风暴干扰，与阿卡夏记录的连接已丢失，请检查网络或后端配置。》", 'system');
+            }
+        }
+
+        // --- 渲染消息助手 ---
         function appendMessage(text, sender) {
             const msgDiv = document.createElement('div');
             msgDiv.className = `message msg-${sender}`;
             
+            // 将换行符转为 <br> 以保留排版，并为系统消息添加标识
+            const formattedText = text.replace(/\n/g, '<br>');
+            
             if(sender === 'system') {
-                msgDiv.innerHTML = `<div class="msg-voice">【世界之声】</div>${text.replace(/\\n/g, '<br>')}`;
+                msgDiv.innerHTML = `<div class="msg-voice">【世界之声】</div>${formattedText}`;
             } else {
-                msgDiv.textContent = text;
+                msgDiv.innerHTML = formattedText;
             }
             
             chatBox.appendChild(msgDiv);
             scrollToBottom();
         }
-
-        function scrollToBottom() {
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        // 模拟 AI 联动影响面板数据
-        function updatePanelData() {
-            // 真实项目中，这里应解析 AI 返回的 JSON 数据来更新 DOM
-            const cepElement = document.getElementById('ui-cep');
-            let currentCep = parseInt(cepElement.innerText);
-            cepElement.innerText = currentCep + 15; // 模拟战力提升
-        }
     </script>
-    <script src="gemini.js"></script>
 </body>
 </html>
