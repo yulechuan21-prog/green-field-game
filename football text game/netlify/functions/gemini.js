@@ -1,52 +1,62 @@
-// netlify/functions/gemini.js
 exports.handler = async function(event, context) {
-    if (event.httpMethod !== 'POST') {
-        return { statusCode: 405, body: 'Method Not Allowed' };
+    if (event.httpMethod !== "POST") {
+        return { statusCode: 405, body: "Method Not Allowed" };
     }
 
     try {
-        const { prompt } = JSON.parse(event.body);
-        const apiKey = process.env.GEMINI_API_KEY;
+        const { message } = JSON.parse(event.body);
+        const apiKey = process.env.GEMINI_API_KEY; 
 
-        // 防御 1：检查有没有配置秘钥
         if (!apiKey) {
-            console.error("严重错误：Netlify 环境变量中找不到 GEMINI_API_KEY");
-            return { statusCode: 500, body: JSON.stringify({ error: '服务器丢失了 API 钥匙！' }) };
+            console.error("缺失 API Key！请检查 Netlify 环境变量。");
+            return { statusCode: 500, body: JSON.stringify({ reply: "《系统警告：未检测到阿卡夏密钥 (API Key)》" }) };
         }
 
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-        
-        const response = await fetch(geminiUrl, {
+        const systemPrompt = `你现在是《全域进化论：阿卡夏之光》系统的“世界之声”。
+        玩家将输入指令，你需要根据设定书的逻辑，判定其行为结果、受苦抗性增加，或推进文字剧情。
+        请保持冷酷、神秘，并包含一定的硬核数值反馈或系统吐槽。`;
+
+        // 纠正 1：使用稳定版本的模型 gemini-1.5-flash
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
+                // 纠正 2：严格使用驼峰命名 systemInstruction
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                contents: [
+                    { role: "user", parts: [{ text: message }] }
+                ]
             })
         });
 
         const data = await response.json();
         
-        // 防御 2：如果 Google 返回了错误信息，把真正的错误打印到黑屏日志里！
-        if (!data.candidates || data.candidates.length === 0) {
-            console.error("❌ Google API 拒绝了请求，它的真实回复是:", JSON.stringify(data));
-            return {
-                statusCode: 500,
-                body: JSON.stringify({ error: 'API 钥匙失效或请求被拒，请查看 Netlify 后台日志。' })
+        // 增加深度排查：如果 Google 依然报错，把完整错误打印到 Netlify 后台
+        if (!response.ok) {
+            console.error("Google API 详细报错:", JSON.stringify(data, null, 2));
+            return { 
+                statusCode: 400, 
+                body: JSON.stringify({ reply: `《世界之声解析失败：${data.error?.message || "未知格式错误"}》` }) 
             };
         }
 
-        const replyText = data.candidates[0].content.parts[0].text;
+        const reply = data.candidates[0].content.parts[0].text;
 
         return {
             statusCode: 200,
-            body: JSON.stringify({ message: replyText })
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reply: reply })
         };
 
     } catch (error) {
-        console.error("API 调用遭遇系统级崩溃:", error);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: 'AI 解说员彻底断线了...' })
+        console.error("后端执行崩溃:", error);
+        return { 
+            statusCode: 500, 
+            body: JSON.stringify({ reply: "《世界之声遭到深渊物理干扰，通信彻底中断》" }) 
         };
     }
 };
