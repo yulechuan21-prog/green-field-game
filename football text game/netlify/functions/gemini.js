@@ -14,7 +14,7 @@ exports.handler = async function(event, context) {
             return { statusCode: 500, body: JSON.stringify({ error: '服务器丢失了 API 钥匙！' }) };
         }
 
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
         
         const response = await fetch(geminiUrl, {
             method: 'POST',
