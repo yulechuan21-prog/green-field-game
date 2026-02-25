@@ -3,224 +3,377 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>绿茵纪元：真实模拟</title>
+<title>绿茵纪元：2010-2026</title>
 <style>
-    :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --green: #10b981; --gold: #fbbf24; --border: #334155; }
-    body { font-family: 'PingFang SC', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
-    .screen { width: 100%; max-width: 400px; height: 100%; display: none; flex-direction: column; background: var(--bg); position: relative; }
-    .screen.active { display: flex; animation: fadeIn 0.4s; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    /* 核心色彩与变量定义：暗黑基调，荧光绿与传奇金点缀 */
+    :root {
+        --bg-color: #0b1120;
+        --card-bg: #1e293b;
+        --text-main: #f8fafc;
+        --text-sub: #94a3b8;
+        --accent-green: #10b981;
+        --accent-gold: #fbbf24;
+        --accent-red: #ef4444;
+        --accent-blue: #3b82f6;
+        --stroke-color: #334155;
+        --glow: 0 0 10px rgba(16, 185, 129, 0.3);
+    }
+
+    body {
+        font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        background-color: #000;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        color: var(--text-main);
+        overflow: hidden;
+    }
+
+    /* 手机模拟器外壳 9:16 / 10:16 */
+    #mobile-container {
+        width: 100%;
+        max-width: 375px;
+        height: 100vh;
+        max-height: 812px;
+        background-color: var(--bg-color);
+        position: relative;
+        overflow: hidden;
+        border: 2px solid var(--stroke-color);
+        box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* 界面统一样式 */
+    .screen {
+        display: none;
+        flex-direction: column;
+        height: 100%;
+        width: 100%;
+        animation: slideIn 0.3s ease-out forwards;
+    }
+    .screen.active {
+        display: flex;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* 顶部导航栏 (带描边修饰) */
+    .header {
+        background: linear-gradient(180deg, #1e293b 0%, #0b1120 100%);
+        padding: 15px 20px;
+        border-bottom: 2px solid var(--stroke-color);
+        text-align: center;
+        position: relative;
+        z-index: 10;
+    }
+    .header-title { font-size: 18px; font-weight: bold; color: var(--accent-gold); text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .header-sub { font-size: 12px; color: var(--text-sub); margin-top: 4px; }
+
+    /* 内容滚动区 */
+    .content-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .content-scroll::-webkit-scrollbar { display: none; }
+
+    /* 卡片化设计 (严格遵循描边与高对比度要求) */
+    .card {
+        background: var(--card-bg);
+        border: 2px solid var(--stroke-color);
+        border-radius: 12px;
+        padding: 15px;
+        position: relative;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .card::before {
+        content: ''; position: absolute; left: -2px; top: 10%; bottom: 10%; width: 4px;
+        background-color: var(--accent-blue); border-radius: 4px;
+    }
+    .card.green::before { background-color: var(--accent-green); }
+    .card.gold::before { background-color: var(--accent-gold); }
+    .card.red::before { background-color: var(--accent-red); }
+
+    .card-title { font-size: 16px; font-weight: 800; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .card-text { font-size: 14px; line-height: 1.6; color: #cbd5e1; }
+    .highlight { color: var(--accent-gold); font-weight: bold; }
+    .tooltip { border-bottom: 1px dashed var(--accent-blue); color: var(--accent-blue); cursor: pointer; }
+
+    /* 游戏六边形数值替代展示 (网格) */
+    .stats-grid {
+        display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;
+    }
+    .stat-box {
+        background: rgba(0,0,0,0.3); border: 1px solid var(--stroke-color);
+        padding: 8px; border-radius: 6px; display: flex; justify-content: space-between; font-size: 12px;
+    }
+    .stat-val { color: var(--accent-green); font-weight: bold; }
+
+    /* 按钮组 */
+    .btn {
+        background: var(--card-bg); border: 2px solid var(--stroke-color); color: var(--text-main);
+        padding: 15px; border-radius: 10px; font-size: 15px; font-weight: bold; text-align: center;
+        cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+        width: 100%; box-sizing: border-box;
+    }
+    .btn:hover, .btn:active {
+        border-color: var(--accent-green); background: rgba(16, 185, 129, 0.1); box-shadow: var(--glow);
+    }
+    .btn-subtext { font-size: 12px; color: var(--text-sub); font-weight: normal; }
     
-    .top-bar { background: rgba(15, 23, 42, 0.95); padding: 15px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; text-align: center; }
-    .status-bar { display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; margin-top: 5px; }
-    
-    .content { padding: 15px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-    .log-panel { background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-family: monospace; line-height: 1.6; font-size: 14px; min-height: 60vh; overflow-y: auto; }
-    
-    /* 剧情卡片与属性框 */
-    .story-block { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed var(--border); }
-    .attr-update { color: var(--gold); font-size: 12px; margin-top: 5px; }
-    
-    .btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 15px; border-radius: 8px; text-align: left; font-size: 14px; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px; }
-    .btn:hover:not(:disabled) { border-color: var(--green); background: rgba(16,185,129,0.1); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    
-    .input-box { background: var(--card); border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 15px; font-size: 14px; }
-    
-    #loader { display: none; text-align: center; color: var(--green); font-weight: bold; padding: 10px; }
+    .btn-primary { background: var(--accent-green); color: #000; border: none; }
+    .btn-primary:hover, .btn-primary:active { background: #059669; border: none; }
+
+    /* 特殊面板：打字机日志区域 */
+    .log-panel {
+        background: rgba(0, 0, 0, 0.6); border: 2px solid var(--stroke-color); border-radius: 12px;
+        padding: 15px; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.8;
+        min-height: 200px;
+    }
 </style>
 </head>
 <body>
 
-<div id="screen-setup" class="screen active">
-    <div class="top-bar"><h3 style="margin:0; color: var(--gold);">📝 新星建档</h3></div>
-    <div class="content">
-        <label>球员姓名</label>
-        <input class="input-box" id="p-name" value="余乐川">
-        
-        <label>起始年份 (2010-2026，决定历史事件)</label>
-        <input class="input-box" type="number" id="p-year" value="2010">
-        
-        <label>场上位置</label>
-        <select class="input-box" id="p-pos">
-            <option>锋线杀手 (高PAC/SHO)</option>
-            <option>中场指挥官 (高PAS/DRI)</option>
-            <option>铁血后卫 (高DEF/PHY)</option>
-        </select>
-        
-        <label>天赋词条 (影响判定概率)</label>
-        <select class="input-box" id="p-trait">
-            <option>大心脏 (关键时刻成功率+10%)</option>
-            <option>刺头 (易得牌但涨粉快)</option>
-            <option>玻璃人 (易受伤但成长快)</option>
-        </select>
+<div id="mobile-container">
 
-        <button class="btn" style="background: var(--green); color: #000; text-align: center; font-weight: bold;" onclick="startGame()">正式签约，踏上绿茵场 ⚽</button>
-    </div>
-</div>
-
-<div id="screen-game" class="screen">
-    <div class="top-bar">
-        <div style="font-weight: bold; font-size: 16px;" id="ui-name">球员名</div>
-        <div class="status-bar">
-            <span id="ui-date">📅 2010年 7月 第1周</span>
-            <span id="ui-money" style="color: var(--gold);">💰 €500</span>
+    <div id="screen-1" class="screen active">
+        <div class="header">
+            <div class="header-title">🌍 绿茵纪元：起源</div>
+            <div class="header-sub">V 1.0.0 | 动态世界载入中...</div>
+        </div>
+        <div class="content-scroll">
+            <div style="text-align: center; margin: 10px 0;">
+                <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='none' stroke='%23fbbf24' stroke-width='4'/><path d='M30,50 L70,50 M50,30 L50,70' stroke='%23fbbf24' stroke-width='4'/></svg>" width="60" alt="logo">
+            </div>
+            <div class="card gold">
+                <div class="card-title">📖 世界线设定</div>
+                <div class="card-text">
+                    “2010年，南非的呜呜祖拉声刚刚平息。<br>
+                    西班牙用令人窒息的传控夺得了世界杯，足球世界正在发生战术革命。”
+                </div>
+            </div>
+            <div class="card blue">
+                <div class="card-title">👤 缔造原创传奇</div>
+                <div class="card-text">
+                    <div style="margin-bottom: 10px;">
+                        <span style="color:var(--text-sub); font-size: 12px;">姓名 (Name)</span><br>
+                        <div style="border-bottom: 1px solid var(--accent-green); padding: 5px 0;">Tom (余乐川)</div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <span style="color:var(--text-sub); font-size: 12px;">潜力评级 (PA)</span><br>
+                        <span class="highlight">C级 - 大器晚成型 🌱</span><br>
+                        <span style="font-size: 12px; color: #cbd5e1;">说明：开局艰难，但带有极高的“隐藏突破概率”。</span>
+                    </div>
+                    <span style="color:var(--text-sub); font-size: 12px;">初始天赋词条 (Traits)</span>
+                    <div style="display: flex; gap: 10px; margin-top: 5px;">
+                        <span style="background: rgba(59,130,246,0.2); padding: 4px 8px; border-radius: 4px; font-size: 12px; border: 1px solid var(--accent-blue);">大心脏</span>
+                        <span style="background: rgba(239,68,68,0.2); padding: 4px 8px; border-radius: 4px; font-size: 12px; border: 1px solid var(--accent-red);">玻璃人</span>
+                    </div>
+                </div>
+            </div>
+            <div style="flex: 1;"></div>
+            <button class="btn btn-primary" onclick="nextScreen(2)">签署试训合同，踏上绿茵场 ✍️</button>
         </div>
     </div>
-    
-    <div class="content" style="padding-bottom: 30px;">
-        <div class="log-panel" id="log-panel">
-            <div style="color: var(--gold); text-align: center;">[系统启动，正在生成属于你的平行宇宙...]</div>
+
+    <div id="screen-2" class="screen">
+        <div class="header">
+            <div class="header-title">📅 2010年 7月15日</div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--accent-gold); margin-top: 8px;">
+                <span>周薪: €500 | 存款: €2,100</span>
+                <span style="color: var(--accent-green);">🔋 体能: 100%</span>
+            </div>
         </div>
-
-        <div id="loader">🔄 AI 主教练正在推演世界线...</div>
-
-        <div id="options-container"></div>
+        <div class="content-scroll">
+            <div class="card green">
+                <div class="card-title">📊 个人能力面板 (CA)</div>
+                <div class="stats-grid">
+                    <div class="stat-box"><span>PAC 速度</span><span class="stat-val">70</span></div>
+                    <div class="stat-box"><span>SHO 射门</span><span class="stat-val">65</span></div>
+                    <div class="stat-box"><span>PAS 传球</span><span class="stat-val">55</span></div>
+                    <div class="stat-box"><span>DRI 盘带</span><span class="stat-val" style="color:#f97316;">45</span></div>
+                    <div class="stat-box"><span>PHY 身体</span><span class="stat-val" style="color:var(--accent-red);">40</span></div>
+                    <div class="stat-box"><span>DEF 防守</span><span class="stat-val">30</span></div>
+                </div>
+            </div>
+            <div class="card blue">
+                <div class="card-title">💬 助教短讯 (新手引导)</div>
+                <div class="card-text">
+                    <b>老教练·汤姆：</b><br>
+                    “嘿，菜鸟！我知道你跑得很快，但这可是职业赛场。遇到高大笨重的后卫，利用 <span class="highlight">PAC（速度）</span> 是最好的选择！避免和他们拼 PHY（身体）！”
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">📰 足坛风云</div>
+                <div class="card-text">
+                    “<span class="tooltip">Tiki-Taka</span> 战术席卷全球！转会市场上，高 PAS（传球）属性的球员身价大涨。”
+                </div>
+            </div>
+            <div style="flex: 1;"></div>
+            <button class="btn" style="border-color: var(--accent-gold); color: var(--accent-gold);" onclick="nextScreen(3)">
+                🏟️ 参加内部对抗赛
+                <span class="btn-subtext">一线队主教练正在场边看着...</span>
+            </button>
+        </div>
     </div>
+
+    <div id="screen-3" class="screen">
+        <div class="header">
+            <div class="header-title">蓝队 0 - 0 红队</div>
+            <div class="header-sub">⏱ 44:00 | 🔋 体能 85%</div>
+        </div>
+        <div class="content-scroll">
+            <div class="log-panel" id="match-log">
+                <span style="color: var(--text-sub);">[15:00] 比赛开始。你代表预备队对阵一线队替补。</span><br><br>
+                <span style="color: var(--accent-gold);">[44:00] 【关键事件触发！】</span><br>
+                中场队友一脚随意的长传把球踢向了前场。皮球飞向你和对方高大中卫之间的空地。你判断出这球有机会！对方正在咆哮着冲过来准备把你撞飞！<br><br>
+                <span style="color: var(--accent-blue);">系统提示：请根据属性优势做出决断。</span>
+            </div>
+            
+            <div id="action-area" style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn" onclick="executeMatchAction(this, 1)">
+                    <span>🏃‍♂️ [冲刺拼抢] 判定: PAC速度</span>
+                    <span class="btn-subtext" style="color: var(--accent-green);">成功率: 75% | 消耗 15% 体能</span>
+                </button>
+                <button class="btn" onclick="executeMatchAction(this, 2)">
+                    <span>🛡️ [身体对抗] 判定: PHY身体</span>
+                    <span class="btn-subtext" style="color: var(--accent-red);">成功率: 20% | 你的力量太薄弱了</span>
+                </button>
+                <button class="btn" onclick="executeMatchAction(this, 3)">
+                    <span>👟 [一脚出球] 判定: PAS传球</span>
+                    <span class="btn-subtext" style="color: var(--text-sub);">成功率: 50% | 安全但毫无威胁</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-4" class="screen">
+        <div class="header">
+            <div class="header-title">🏁 终场哨响</div>
+            <div class="header-sub">赛后数据统计算与评分</div>
+        </div>
+        <div class="content-scroll">
+            <div class="card gold" style="text-align: center; padding: 30px 15px;">
+                <div style="font-size: 14px; color: var(--text-sub);">Match Rating (赛后评分)</div>
+                <div style="font-size: 48px; font-weight: 900; color: var(--accent-gold); margin: 10px 0;">8.2</div>
+                <div style="color: var(--accent-green); font-weight: bold;">🌟 出色发挥！经验获取 120%</div>
+            </div>
+            
+            <div class="card green">
+                <div class="card-title">📈 经验账单</div>
+                <div class="stats-grid">
+                    <div class="stat-box"><span>PAC (速度)</span><span class="stat-val">+25 XP</span></div>
+                    <div class="stat-box"><span>SHO (射门)</span><span class="stat-val">+15 XP</span></div>
+                    <div class="stat-box"><span>PAS (传球)</span><span class="stat-val">+50 XP</span></div>
+                </div>
+            </div>
+
+            <div class="card blue">
+                <div class="card-title">💰 财务流水</div>
+                <div class="card-text" style="display: flex; justify-content: space-between;">
+                    <span>基础周薪发放</span><span style="color: var(--accent-green);">+ €500</span>
+                </div>
+                <div class="card-text" style="display: flex; justify-content: space-between; margin-top: 5px;">
+                    <span>进球/助攻奖金</span><span style="color: var(--accent-green);">+ €1,500</span>
+                </div>
+            </div>
+            <div style="flex: 1;"></div>
+            <button class="btn btn-primary" onclick="nextScreen(5)">
+                跳过时光 ⏩ 开启二周目执教
+                <span class="btn-subtext" style="color: #1f2937;">直接体验2026年俱乐部经理模式</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="screen-5" class="screen">
+        <div class="header">
+            <div class="header-title">👔 俱乐部办公室</div>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-top: 8px;">
+                <span style="color: var(--accent-gold);">资金: €15.5M</span>
+                <span style="color: var(--accent-green);">董事会信任: 85%</span>
+            </div>
+        </div>
+        <div class="content-scroll">
+            <div class="card red">
+                <div class="card-title">🚨 突发转会事件！</div>
+                <div class="card-text">
+                    “警告！当你正在和多特蒙德谈判购买那名19岁天才中卫时，<span class="highlight">巴黎圣日耳曼 (PSG) 突然介入！</span>他们开出了极高的薪资，球员经纪人现在要求你匹配报价。”
+                </div>
+            </div>
+
+            <div class="card blue">
+                <div class="card-title">🕵️ 首席球探密报</div>
+                <div class="card-text">
+                    “老板，这名球员身体素质极佳 (PHY 85+)，但隐藏词条显示他 <span style="color: var(--accent-red);">[大赛容易隐身]</span>。我们真的要为了他和巴黎死磕吗？”
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                <button class="btn" onclick="alert('你砸出违约金！财政吃紧，但你获得了建队基石！')">
+                    <span>💰 [怒砸违约金] 一次性付清</span>
+                    <span class="btn-subtext">消耗 €15M，直接截胡大巴黎</span>
+                </button>
+                <button class="btn" onclick="alert('拉扯失败！巴黎圣日耳曼签下了该球员。')">
+                    <span>📝 [分期拉扯] 首付5M+附加条款</span>
+                    <span class="btn-subtext">考验现实财技，有概率被巴黎抢走</span>
+                </button>
+                <button class="btn" onclick="alert('明智的选择，你保住了预算。')">
+                    <span>🛑 [放弃竞价] 寻找平替</span>
+                    <span class="btn-subtext">及时止损，留着资金买入高性价比老将</span>
+                </button>
+            </div>
+            <div style="flex: 1;"></div>
+            <div style="text-align: center; color: var(--text-sub); font-size: 12px; margin-bottom: 10px;">
+                点击上方选项完成一次经营决策
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
-    // 核心：玩家全局状态机 (State Machine)
-    let state = {
-        name: '', year: 2010, month: 7, week: 1, pos: '', trait: '',
-        money: 500, rating: 6.0, 
-        stats: { PAC: 60, SHO: 55, PAS: 55, DRI: 55, DEF: 40, PHY: 60 },
-        context: "这是你加入球队的第一周，即将进行青训营的内部选拔赛。"
-    };
-
-    function updateUI() {
-        document.getElementById('ui-name').innerText = state.name;
-        document.getElementById('ui-date').innerText = `📅 ${state.year}年 ${state.month}月 第${state.week}周`;
-        document.getElementById('ui-money').innerText = `💰 €${state.money}`;
+    // 界面切换逻辑
+    function nextScreen(screenNumber) {
+        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+        document.getElementById('screen-' + screenNumber).classList.add('active');
     }
 
-    // 时间流逝机制
-    function advanceTime() {
-        state.week++;
-        if(state.week > 4) { state.week = 1; state.month++; }
-        if(state.month > 12) { state.month = 1; state.year++; }
-        updateUI();
-    }
-
-    function startGame() {
-        state.name = document.getElementById('p-name').value;
-        state.year = parseInt(document.getElementById('p-year').value);
-        state.pos = document.getElementById('p-pos').value;
-        state.trait = document.getElementById('p-trait').value;
+    // 界面3的比赛决策模拟逻辑
+    function executeMatchAction(buttonElement, choice) {
+        // 隐藏按钮区域
+        document.getElementById('action-area').style.display = 'none';
         
-        document.getElementById('screen-setup').classList.remove('active');
-        document.getElementById('screen-game').classList.add('active');
-        updateUI();
+        const logPanel = document.getElementById('match-log');
         
-        // 初次呼叫大模型
-        generateNextTurn("系统开局初始化");
-    }
-
-    async function generateNextTurn(playerChoice) {
-        const logPanel = document.getElementById('log-panel');
-        const optionsContainer = document.getElementById('options-container');
-        const loader = document.getElementById('loader');
-
-        // 清空选项，显示加载
-        optionsContainer.innerHTML = '';
-        loader.style.display = 'block';
-
-        // 记录玩家的选择，追加到屏幕上
-        if(playerChoice !== "系统开局初始化") {
-            logPanel.innerHTML += `<div style="color: var(--green); margin: 15px 0;">👉 你选择了：${playerChoice}</div>`;
-            advanceTime(); // 每次玩家做出重大决策，时间推移一周
-        }
-
-        // 构建极其硬核的 GDD 系统提示词
-        const promptText = `
-你是一个硬核的足球RPG游戏文字引擎(DM)。
-【当前玩家状态】
-姓名：${state.name} | 年份：${state.year}年${state.month}月 | 位置：${state.pos} | 特质：${state.trait}
-身价存款：€${state.money}
-核心属性(满分99)：速度PAC(${state.stats.PAC})，射门SHO(${state.stats.SHO})，传球PAS(${state.stats.PAS})，身体PHY(${state.stats.PHY})
-近期处境摘要：${state.context}
-玩家刚刚做出的选择：【${playerChoice}】
-
-【你的任务】
-1. 根据玩家的选择进行判定。如果选择需要属性判定（如强行突破看PAC），请根据他的属性生成合理的结果（成功或失败）。
-2. 推进剧情发展。这回合可能是：一场激烈的比赛关键时刻、一次日常高强度训练、一次更衣室的争吵事件、或者转会窗的报价。请根据年份加入真实历史背景（如2010是Tiki-Taka，2020是疫情空场，2018有VAR）。
-3. 给出3个全新的、截然不同的选项供玩家下一步决策。选项必须标注主要判定的属性。
-
-【必须严格按照以下格式输出，不能有任何多余前缀，用于程序解析】：
-||剧情||
-（在这里写不少于100字的生动剧情推演、赛况播报或突发事件。请结语描述接下来面临的新危机或抉择点）
-||状态更新||
-（用一句话说明数值的微小变化，例如：存款+500，PAC+1，赛后评分 7.5分）
-||选项A||[判定: PAC速度] (具体动作描述，如：利用速度强吃后卫)
-||选项B||[判定: PHY身体] (具体动作描述，如：背身护球等待接应)
-||选项C||[判定: 高风险] (具体动作描述，如：向裁判抱怨怒吼)`;
-
-        try {
-            const response = await fetch('/.netlify/functions/gemini', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: promptText })
-            });
-            const data = await response.json();
-            
-            loader.style.display = 'none';
-            if(data.message) {
-                parseAndRender(data.message);
-            } else {
-                logPanel.innerHTML += `<div style="color: red;">[AI引擎连接超时，请重试...]</div>`;
-            }
-        } catch (error) {
-            loader.style.display = 'none';
-            logPanel.innerHTML += `<div style="color: red;">[系统网络中断。]</div>`;
-        }
-    }
-
-    // 解析 AI 按格式返回的文本
-    function parseAndRender(aiText) {
-        const logPanel = document.getElementById('log-panel');
-        const optionsContainer = document.getElementById('options-container');
-
-        // 使用正则拆解块内容
-        const storyMatch = aiText.match(/\|\|剧情\|\|([\s\S]*?)(?=\|\|状态更新\|\|)/);
-        const statusMatch = aiText.match(/\|\|状态更新\|\|([\s\S]*?)(?=\|\|选项A\|\|)/);
-        const optA = aiText.match(/\|\|选项A\|\|(.*)/);
-        const optB = aiText.match(/\|\|选项B\|\|(.*)/);
-        const optC = aiText.match(/\|\|选项C\|\|(.*)/);
-
-        if (storyMatch) {
-            let storyBlock = `<div class="story-block">${storyMatch[1].trim()}`;
-            if (statusMatch) {
-                storyBlock += `<div class="attr-update">📈 系统结算：${statusMatch[1].trim()}</div>`;
-                // 这里可以写正则去更新 state 里的真实数值，比如匹配金钱增加
-                state.context = storyMatch[1].substring(0, 50) + "..."; // 截取一部分作为下回合记忆
-            }
-            storyBlock += `</div>`;
-            logPanel.innerHTML += storyBlock;
-            logPanel.scrollTop = logPanel.scrollHeight;
-        }
-
-        // 渲染全新按钮
-        if (optA) createButton(optA[1].trim(), optionsContainer);
-        if (optB) createButton(optB[1].trim(), optionsContainer);
-        if (optC) createButton(optC[1].trim(), optionsContainer);
-    }
-
-    function createButton(text, container) {
-        const btn = document.createElement('button');
-        btn.className = 'btn';
-        // 解析选项里的 [判定] 和 具体动作
-        const tagMatch = text.match(/(\[.*?\])(.*)/);
-        if(tagMatch) {
-            btn.innerHTML = `<span style="color:var(--gold); font-weight:bold; font-size:12px;">${tagMatch[1]}</span><span>${tagMatch[2]}</span>`;
+        // 模拟暗骰反馈
+        if(choice === 1) {
+            logPanel.innerHTML += `<br><br><span style="color: var(--accent-gold);">🎲 系统暗骰计算... 判定成功！</span><br><br>
+            ⚽ 你猛蹬草皮，抢在后卫伸腿前把球趟走！你单刀了！面对弃门出击的门将，你冷静地一脚低射破网！<br><br>
+            <span style="color: var(--accent-green);">[回合结束。主裁吹响终场哨音！]</span>`;
         } else {
-            btn.innerText = text;
+            logPanel.innerHTML += `<br><br><span style="color: var(--accent-red);">🎲 系统暗骰计算... 判定失败！</span><br><br>
+            💥 对方中卫像一堵墙一样撞了过来，你单薄的身体瞬间失去平衡倒在草地上，球权丢失！<br><br>
+            <span style="color: var(--accent-green);">[回合结束。主裁吹响终场哨音！]</span>`;
         }
         
-        btn.onclick = () => {
-            Array.from(container.children).forEach(b => b.disabled = true);
-            generateNextTurn(text);
-        };
-        container.appendChild(btn);
+        // 滚动到底部
+        logPanel.scrollTop = logPanel.scrollHeight;
+
+        // 延迟2秒后显示前往结算的按钮
+        setTimeout(() => {
+            logPanel.innerHTML += `<br><br><button class="btn btn-primary" onclick="nextScreen(4)">前往赛后更衣室结算 🚿</button>`;
+            logPanel.scrollTop = logPanel.scrollHeight;
+        }, 1500);
     }
 </script>
 
