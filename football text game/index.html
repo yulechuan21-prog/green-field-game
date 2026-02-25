@@ -3,163 +3,157 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>绿茵纪元：AI无限驱动版</title>
+<title>绿茵纪元：真实模拟</title>
 <style>
-    :root {
-        --bg-dark: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; --text-sub: #94a3b8;
-        --accent-green: #10b981; --accent-gold: #fbbf24; --accent-blue: #3b82f6; --border-color: #334155;
-    }
-    body { font-family: 'PingFang SC', sans-serif; background-color: #000; color: var(--text-main); margin: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
-    .screen { width: 100%; max-width: 375px; height: 100%; background-color: var(--bg-dark); border: 1px solid var(--border-color); display: none; flex-direction: column; overflow-y: auto; position: relative; }
+    :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --green: #10b981; --gold: #fbbf24; --border: #334155; }
+    body { font-family: 'PingFang SC', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
+    .screen { width: 100%; max-width: 400px; height: 100%; display: none; flex-direction: column; background: var(--bg); position: relative; }
     .screen.active { display: flex; animation: fadeIn 0.4s; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     
-    .top-bar { background: rgba(15, 23, 42, 0.95); padding: 15px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 10; text-align: center; font-weight: bold; }
-    .feed-container { padding: 15px; flex: 1; display: flex; flex-direction: column; gap: 15px; }
+    .top-bar { background: rgba(15, 23, 42, 0.95); padding: 15px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; text-align: center; }
+    .status-bar { display: flex; justify-content: space-between; font-size: 12px; color: #94a3b8; margin-top: 5px; }
     
-    /* 表单输入样式 */
-    .input-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 15px; }
-    .input-group label { font-size: 13px; color: var(--text-sub); }
-    .input-group input, .input-group select { background: var(--card-bg); border: 1px solid var(--border-color); color: #fff; padding: 12px; border-radius: 6px; font-size: 15px; outline: none; }
-    .input-group input:focus { border-color: var(--accent-blue); }
-
-    /* AI 动态输出区 */
-    .ai-log-panel { background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; font-family: 'Courier New', monospace; line-height: 1.6; font-size: 14px; min-height: 250px; overflow-y: auto; }
+    .content { padding: 15px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+    .log-panel { background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 8px; padding: 15px; font-family: monospace; line-height: 1.6; font-size: 14px; min-height: 60vh; overflow-y: auto; }
     
-    .btn { background-color: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); padding: 15px; border-radius: 8px; text-align: left; font-size: 14px; cursor: pointer; transition: all 0.2s; margin-bottom: 10px; display: block; width: 100%; box-sizing: border-box; }
-    .btn:hover:not(:disabled) { border-color: var(--accent-green); background: rgba(16,185,129,0.1); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: #555; }
-    .btn-primary { background-color: var(--accent-green); color: #000; font-weight: bold; text-align: center; border: none; }
+    /* 剧情卡片与属性框 */
+    .story-block { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px dashed var(--border); }
+    .attr-update { color: var(--gold); font-size: 12px; margin-top: 5px; }
     
-    /* 加载动画 */
-    .loader { display: none; text-align: center; padding: 20px; color: var(--accent-gold); font-size: 14px; }
-    .loader.active { display: block; }
+    .btn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 15px; border-radius: 8px; text-align: left; font-size: 14px; cursor: pointer; transition: 0.2s; width: 100%; margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px; }
+    .btn:hover:not(:disabled) { border-color: var(--green); background: rgba(16,185,129,0.1); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .input-box { background: var(--card); border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-bottom: 15px; font-size: 14px; }
+    
+    #loader { display: none; text-align: center; color: var(--green); font-weight: bold; padding: 10px; }
 </style>
 </head>
 <body>
 
-<div id="screen-create" class="screen active">
-    <div class="top-bar" style="color: var(--accent-gold);">缔造传奇纪元</div>
-    <div class="feed-container">
-        <div class="input-group">
-            <label>球员姓名</label>
-            <input type="text" id="p-name" placeholder="例如：余乐川" value="余乐川">
-        </div>
-        <div class="input-group">
-            <label>国籍</label>
-            <input type="text" id="p-nation" placeholder="例如：中国" value="中国">
-        </div>
-        <div class="input-group">
-            <label>场上位置</label>
-            <select id="p-position">
-                <option value="全能前锋">全能前锋</option>
-                <option value="中场指挥官">中场指挥官</option>
-                <option value="铁血中卫">铁血中卫</option>
-            </select>
-        </div>
-        <div class="input-group">
-            <label>初始核心能力 (1-99)</label>
-            <div style="display: flex; gap: 10px;">
-                <input type="number" id="p-pac" placeholder="速度" value="75" style="width: 33%;">
-                <input type="number" id="p-sho" placeholder="射门" value="60" style="width: 33%;">
-                <input type="number" id="p-phy" placeholder="身体" value="55" style="width: 33%;">
-            </div>
-        </div>
-        <button class="btn btn-primary" style="margin-top: 20px;" onclick="startGame()">踏上绿茵场 ⚽</button>
+<div id="screen-setup" class="screen active">
+    <div class="top-bar"><h3 style="margin:0; color: var(--gold);">📝 新星建档</h3></div>
+    <div class="content">
+        <label>球员姓名</label>
+        <input class="input-box" id="p-name" value="余乐川">
+        
+        <label>起始年份 (2010-2026，决定历史事件)</label>
+        <input class="input-box" type="number" id="p-year" value="2010">
+        
+        <label>场上位置</label>
+        <select class="input-box" id="p-pos">
+            <option>锋线杀手 (高PAC/SHO)</option>
+            <option>中场指挥官 (高PAS/DRI)</option>
+            <option>铁血后卫 (高DEF/PHY)</option>
+        </select>
+        
+        <label>天赋词条 (影响判定概率)</label>
+        <select class="input-box" id="p-trait">
+            <option>大心脏 (关键时刻成功率+10%)</option>
+            <option>刺头 (易得牌但涨粉快)</option>
+            <option>玻璃人 (易受伤但成长快)</option>
+        </select>
+
+        <button class="btn" style="background: var(--green); color: #000; text-align: center; font-weight: bold;" onclick="startGame()">正式签约，踏上绿茵场 ⚽</button>
     </div>
 </div>
 
 <div id="screen-game" class="screen">
     <div class="top-bar">
-        <span id="ui-player-name">球员名</span> | 状态：<span style="color:var(--accent-green);">体能充沛</span>
+        <div style="font-weight: bold; font-size: 16px;" id="ui-name">球员名</div>
+        <div class="status-bar">
+            <span id="ui-date">📅 2010年 7月 第1周</span>
+            <span id="ui-money" style="color: var(--gold);">💰 €500</span>
+        </div>
     </div>
-    <div class="feed-container" style="padding-bottom: 80px;">
-        
-        <div id="story-log" class="ai-log-panel">
-            [系统初始化中...]
+    
+    <div class="content" style="padding-bottom: 30px;">
+        <div class="log-panel" id="log-panel">
+            <div style="color: var(--gold); text-align: center;">[系统启动，正在生成属于你的平行宇宙...]</div>
         </div>
 
-        <div id="loading" class="loader">
-            🤖 AI 引擎推演中，请稍候...
-        </div>
+        <div id="loader">🔄 AI 主教练正在推演世界线...</div>
 
-        <div id="dynamic-options" style="margin-top: 15px;">
-            </div>
-
+        <div id="options-container"></div>
     </div>
 </div>
 
 <script>
-    // 玩家全局状态面板
-    let playerState = {
-        name: '', nation: '', position: '', pac: 0, sho: 0, phy: 0, 
-        history: [] // 记录玩家选过的历史，让AI有记忆！
+    // 核心：玩家全局状态机 (State Machine)
+    let state = {
+        name: '', year: 2010, month: 7, week: 1, pos: '', trait: '',
+        money: 500, rating: 6.0, 
+        stats: { PAC: 60, SHO: 55, PAS: 55, DRI: 55, DEF: 40, PHY: 60 },
+        context: "这是你加入球队的第一周，即将进行青训营的内部选拔赛。"
     };
 
-    function switchScreen(targetScreenId) {
-        document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
-        document.getElementById(targetScreenId).classList.add('active');
+    function updateUI() {
+        document.getElementById('ui-name').innerText = state.name;
+        document.getElementById('ui-date').innerText = `📅 ${state.year}年 ${state.month}月 第${state.week}周`;
+        document.getElementById('ui-money').innerText = `💰 €${state.money}`;
     }
 
-    // 1. 收集玩家输入并开启第一回合
+    // 时间流逝机制
+    function advanceTime() {
+        state.week++;
+        if(state.week > 4) { state.week = 1; state.month++; }
+        if(state.month > 12) { state.month = 1; state.year++; }
+        updateUI();
+    }
+
     function startGame() {
-        playerState.name = document.getElementById('p-name').value || '无名小卒';
-        playerState.nation = document.getElementById('p-nation').value || '未知';
-        playerState.position = document.getElementById('p-position').value;
-        playerState.pac = document.getElementById('p-pac').value;
-        playerState.sho = document.getElementById('p-sho').value;
-        playerState.phy = document.getElementById('p-phy').value;
-
-        document.getElementById('ui-player-name').innerText = `${playerState.nation}小将：${playerState.name}`;
-        switchScreen('screen-game');
+        state.name = document.getElementById('p-name').value;
+        state.year = parseInt(document.getElementById('p-year').value);
+        state.pos = document.getElementById('p-pos').value;
+        state.trait = document.getElementById('p-trait').value;
         
-        // 发送开局指令给 AI
-        const initPrompt = `你是一个深度的足球文字RPG游戏引擎。
-        玩家设定：姓名【${playerState.name}】，国籍【${playerState.nation}】，位置【${playerState.position}】。核心能力：速度${playerState.pac}，射门${playerState.sho}，身体${playerState.phy}。
-        当前节点：这是玩家职业生涯的第一天，正在参加欧洲某二级联赛球队的试训对抗赛。
-        请生成一段引人入胜的开场实况剧情（约80字），并提供3个不同风格的应对选项。
+        document.getElementById('screen-setup').classList.remove('active');
+        document.getElementById('screen-game').classList.add('active');
+        updateUI();
         
-        你的回复必须严格按照以下格式（包含特殊符号以便前端解析）：
-        【剧情】
-        (这里写你的剧情或实况解说)
-        【选项A】(动作描述，例如：利用速度强行突破)
-        【选项B】(动作描述，例如：背身拿球寻找对抗)
-        【选项C】(动作描述，例如：冷静观察传给队友)`;
-
-        callAI(initPrompt);
+        // 初次呼叫大模型
+        generateNextTurn("系统开局初始化");
     }
 
-    // 2. 玩家点击了某个动态选项，进入下一循环
-    function chooseOption(optionText) {
-        // 记录历史，让故事连贯
-        playerState.history.push(`玩家选择了：${optionText}`);
-        // 限制记忆长度，防止 token 爆掉
-        if(playerState.history.length > 5) playerState.history.shift(); 
+    async function generateNextTurn(playerChoice) {
+        const logPanel = document.getElementById('log-panel');
+        const optionsContainer = document.getElementById('options-container');
+        const loader = document.getElementById('loader');
 
-        const dynamicPrompt = `你是一个深度的足球文字RPG游戏引擎。
-        玩家【${playerState.name}】(${playerState.position})，属性：速度${playerState.pac}/射门${playerState.sho}/身体${playerState.phy}。
-        近期事件记忆：${playerState.history.join(" -> ")}。
-        基于玩家刚做出的选择：【${optionText}】，请进行暗骰判定（考虑他的属性优势/劣势），生成一段激情或充满挫折的后续赛场实况，然后紧接着给出下一步的3个面临的突发选项或日常抉择。
-        
-        你的回复必须严格按照以下格式：
-        【剧情】
-        (这里写剧情或解说，判定刚刚选择的结果，并引出新的危机或机遇)
-        【选项A】(动作或决策描述)
-        【选项B】(动作或决策描述)
-        【选项C】(动作或决策描述)`;
-
-        callAI(dynamicPrompt);
-    }
-
-    // 3. 核心通讯机制：呼叫 Netlify 后端，解析 AI 回复
-    async function callAI(promptText) {
-        const logPanel = document.getElementById('story-log');
-        const optionsContainer = document.getElementById('dynamic-options');
-        const loader = document.getElementById('loading');
-
-        // 清空旧选项，显示加载中
+        // 清空选项，显示加载
         optionsContainer.innerHTML = '';
-        loader.classList.add('active');
+        loader.style.display = 'block';
+
+        // 记录玩家的选择，追加到屏幕上
+        if(playerChoice !== "系统开局初始化") {
+            logPanel.innerHTML += `<div style="color: var(--green); margin: 15px 0;">👉 你选择了：${playerChoice}</div>`;
+            advanceTime(); // 每次玩家做出重大决策，时间推移一周
+        }
+
+        // 构建极其硬核的 GDD 系统提示词
+        const promptText = `
+你是一个硬核的足球RPG游戏文字引擎(DM)。
+【当前玩家状态】
+姓名：${state.name} | 年份：${state.year}年${state.month}月 | 位置：${state.pos} | 特质：${state.trait}
+身价存款：€${state.money}
+核心属性(满分99)：速度PAC(${state.stats.PAC})，射门SHO(${state.stats.SHO})，传球PAS(${state.stats.PAS})，身体PHY(${state.stats.PHY})
+近期处境摘要：${state.context}
+玩家刚刚做出的选择：【${playerChoice}】
+
+【你的任务】
+1. 根据玩家的选择进行判定。如果选择需要属性判定（如强行突破看PAC），请根据他的属性生成合理的结果（成功或失败）。
+2. 推进剧情发展。这回合可能是：一场激烈的比赛关键时刻、一次日常高强度训练、一次更衣室的争吵事件、或者转会窗的报价。请根据年份加入真实历史背景（如2010是Tiki-Taka，2020是疫情空场，2018有VAR）。
+3. 给出3个全新的、截然不同的选项供玩家下一步决策。选项必须标注主要判定的属性。
+
+【必须严格按照以下格式输出，不能有任何多余前缀，用于程序解析】：
+||剧情||
+（在这里写不少于100字的生动剧情推演、赛况播报或突发事件。请结语描述接下来面临的新危机或抉择点）
+||状态更新||
+（用一句话说明数值的微小变化，例如：存款+500，PAC+1，赛后评分 7.5分）
+||选项A||[判定: PAC速度] (具体动作描述，如：利用速度强吃后卫)
+||选项B||[判定: PHY身体] (具体动作描述，如：背身护球等待接应)
+||选项C||[判定: 高风险] (具体动作描述，如：向裁判抱怨怒吼)`;
 
         try {
             const response = await fetch('/.netlify/functions/gemini', {
@@ -167,53 +161,64 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: promptText })
             });
-            
             const data = await response.json();
-            loader.classList.remove('active');
-
+            
+            loader.style.display = 'none';
             if(data.message) {
-                parseAndRender(data.message, logPanel, optionsContainer);
+                parseAndRender(data.message);
             } else {
-                logPanel.innerHTML += `<br><br><span style="color: #ef4444;">[AI引擎连接超时，世界线坍塌...]</span>`;
+                logPanel.innerHTML += `<div style="color: red;">[AI引擎连接超时，请重试...]</div>`;
             }
         } catch (error) {
-            loader.classList.remove('active');
-            logPanel.innerHTML += `<br><br><span style="color: #ef4444;">[网络中断，无法获取系统指令。]</span>`;
+            loader.style.display = 'none';
+            logPanel.innerHTML += `<div style="color: red;">[系统网络中断。]</div>`;
         }
     }
 
-    // 4. 解析 AI 按格式返回的文本，把它们变成真正的按钮
-    function parseAndRender(aiText, logPanel, optionsContainer) {
-        // 简单正则拆解 AI 输出的内容
-        const storyMatch = aiText.match(/【剧情】([\s\S]*?)(?=【选项A】)/);
-        const optAMatch = aiText.match(/【选项A】(.*)/);
-        const optBMatch = aiText.match(/【选项B】(.*)/);
-        const optCMatch = aiText.match(/【选项C】(.*)/);
+    // 解析 AI 按格式返回的文本
+    function parseAndRender(aiText) {
+        const logPanel = document.getElementById('log-panel');
+        const optionsContainer = document.getElementById('options-container');
+
+        // 使用正则拆解块内容
+        const storyMatch = aiText.match(/\|\|剧情\|\|([\s\S]*?)(?=\|\|状态更新\|\|)/);
+        const statusMatch = aiText.match(/\|\|状态更新\|\|([\s\S]*?)(?=\|\|选项A\|\|)/);
+        const optA = aiText.match(/\|\|选项A\|\|(.*)/);
+        const optB = aiText.match(/\|\|选项B\|\|(.*)/);
+        const optC = aiText.match(/\|\|选项C\|\|(.*)/);
 
         if (storyMatch) {
-            // 用打字机效果或者直接追加剧情文本
-            const storyText = storyMatch[1].trim();
-            logPanel.innerHTML += `<br><br><span style="color: var(--accent-gold);">[赛事推演]</span><br>${storyText}`;
+            let storyBlock = `<div class="story-block">${storyMatch[1].trim()}`;
+            if (statusMatch) {
+                storyBlock += `<div class="attr-update">📈 系统结算：${statusMatch[1].trim()}</div>`;
+                // 这里可以写正则去更新 state 里的真实数值，比如匹配金钱增加
+                state.context = storyMatch[1].substring(0, 50) + "..."; // 截取一部分作为下回合记忆
+            }
+            storyBlock += `</div>`;
+            logPanel.innerHTML += storyBlock;
             logPanel.scrollTop = logPanel.scrollHeight;
         }
 
-        // 动态创建按钮
-        if (optAMatch) createButton(optAMatch[1].trim(), optionsContainer);
-        if (optBMatch) createButton(optBMatch[1].trim(), optionsContainer);
-        if (optCMatch) createButton(optCMatch[1].trim(), optionsContainer);
+        // 渲染全新按钮
+        if (optA) createButton(optA[1].trim(), optionsContainer);
+        if (optB) createButton(optB[1].trim(), optionsContainer);
+        if (optC) createButton(optC[1].trim(), optionsContainer);
     }
 
-    // 辅助工具：生成单个 HTML 按钮并绑定事件
     function createButton(text, container) {
         const btn = document.createElement('button');
         btn.className = 'btn';
-        btn.innerText = `👉 ${text}`;
+        // 解析选项里的 [判定] 和 具体动作
+        const tagMatch = text.match(/(\[.*?\])(.*)/);
+        if(tagMatch) {
+            btn.innerHTML = `<span style="color:var(--gold); font-weight:bold; font-size:12px;">${tagMatch[1]}</span><span>${tagMatch[2]}</span>`;
+        } else {
+            btn.innerText = text;
+        }
+        
         btn.onclick = () => {
-            // 点击后按钮置灰，防止重复提交
             Array.from(container.children).forEach(b => b.disabled = true);
-            const logPanel = document.getElementById('story-log');
-            logPanel.innerHTML += `<br><br><span style="color: var(--accent-blue);">👤 你的决断：${text}</span>`;
-            chooseOption(text);
+            generateNextTurn(text);
         };
         container.appendChild(btn);
     }
