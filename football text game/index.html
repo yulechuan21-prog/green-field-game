@@ -20,7 +20,6 @@
         background-color: #000;
         color: var(--text-main);
         margin: 0;
-        /* 让主体在网页中居中，模拟手机屏幕 */
         display: flex;
         justify-content: center;
         align-items: center;
@@ -34,23 +33,16 @@
         max-height: 812px;
         background-color: var(--bg-dark);
         border: 1px solid var(--border-color);
-        /* 核心修改：默认隐藏所有界面 */
         display: none; 
         flex-direction: column;
         position: relative;
         overflow-y: auto;
         box-shadow: 0 0 20px rgba(0,0,0,0.8);
     }
-    /* 核心修改：只有带有 active 类的界面才会显示 */
-    .screen.active {
-        display: flex; 
-    }
-    
-    /* 滚动条美化 */
+    .screen.active { display: flex; }
     .screen::-webkit-scrollbar { width: 4px; }
     .screen::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 2px; }
 
-    /* 通用顶栏 */
     .top-bar {
         background: rgba(15, 23, 42, 0.95);
         padding: 15px;
@@ -63,7 +55,6 @@
     .time-line { font-size: 14px; color: var(--accent-gold); font-weight: bold; margin-bottom: 5px; }
     .status-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-sub); }
 
-    /* 卡片样式 */
     .feed-container { padding: 15px; flex: 1; display: flex; flex-direction: column; gap: 15px; }
     .card {
         background-color: var(--card-bg);
@@ -71,19 +62,28 @@
         border-left: 4px solid var(--accent-green);
         border-radius: 8px;
         padding: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     }
-    .card.warning { border-left-color: #ef4444; }
     .card.info { border-left-color: var(--accent-blue); }
     .card-title { font-size: 16px; font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 5px; }
     .card-content { font-size: 14px; line-height: 1.6; color: var(--text-main); }
     
-    /* 文字面板特化 */
-    .text-panel { font-family: 'Courier New', monospace; line-height: 1.8; font-size: 15px; }
-    .text-panel u { text-decoration: none; border-bottom: 1px dashed var(--accent-blue); color: var(--accent-blue); cursor: pointer; }
+    /* 文字面板特化（比赛实况视窗） */
+    .text-panel { 
+        font-family: 'Courier New', monospace; 
+        line-height: 1.8; 
+        font-size: 15px; 
+        background: rgba(0,0,0,0.3);
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #334155;
+        min-height: 200px;
+        max-height: 400px; /* 限制高度，内部滚动 */
+        overflow-y: auto;
+    }
+    .text-panel::-webkit-scrollbar { width: 4px; }
+    .text-panel::-webkit-scrollbar-thumb { background: var(--accent-blue); border-radius: 2px; }
     
-    /* 按钮组 */
-    .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+    .btn-group { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
     .btn {
         background-color: transparent;
         border: 1px solid var(--border-color);
@@ -98,12 +98,12 @@
         justify-content: space-between;
         align-items: center;
     }
-    .btn:hover, .btn.active { background-color: rgba(16, 185, 129, 0.1); border-color: var(--accent-green); }
-    .btn:active { transform: scale(0.98); } /* 点击缩放反馈 */
+    .btn:hover:not(:disabled), .btn.active:not(:disabled) { background-color: rgba(16, 185, 129, 0.1); border-color: var(--accent-green); }
+    .btn:active:not(:disabled) { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; } /* 禁用状态 */
     .btn-chance { color: var(--accent-green); font-weight: bold; }
     .btn-cost { color: var(--accent-gold); font-size: 12px; }
 
-    /* 底部导航 */
     .bottom-nav {
         display: flex;
         justify-content: space-around;
@@ -115,92 +115,54 @@
     }
     .nav-item { color: var(--text-sub); font-size: 12px; text-align: center; display: flex; flex-direction: column; gap: 4px; cursor: pointer; }
     .nav-item.active { color: var(--accent-green); }
-
-    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    .stat-item { background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; display: flex; justify-content: space-between; font-size: 13px; }
-    .stat-val { color: var(--accent-gold); font-weight: bold; }
 </style>
 </head>
 <body>
 
-<div id="screen-setup" class="screen active">
+<div id="screen-setup" class="screen">
     <div class="top-bar" style="text-align: center;">人物建档</div>
     <div class="feed-container" style="justify-content: center;">
         <div class="card info">
-            <div class="card-content text-panel">
-                <span style="color: var(--accent-gold);">[系统启动...]</span><br>
+            <div class="card-content">
+                <span style="color: var(--accent-gold);">[系统启动...]</span><br><br>
                 “2010年，南非的呜呜祖拉声刚刚平息。”<br>
                 “而你，距离实现职业梦想，只差一份正式合同...”
             </div>
         </div>
-        
-        <div class="card" style="margin-top: 20px;">
-            <div class="card-title">📝 缔造原创传奇</div>
-            <div class="card-content">
-                <div style="margin-bottom: 10px;">
-                    <span style="color: var(--text-sub); font-size: 12px;">姓名</span><br>
-                    <div style="border-bottom: 1px solid var(--accent-green); padding: 5px 0;">Tom (余乐川)</div>
-                </div>
-            </div>
-        </div>
-        
         <div class="btn-group">
-            <button class="btn active" onclick="switchScreen('screen-hub')" style="justify-content: center; font-size: 16px; font-weight: bold; color: var(--accent-green);">进入绿茵场</button>
+            <button class="btn active" onclick="switchScreen('screen-match')" style="justify-content: center; font-size: 16px; font-weight: bold; color: var(--accent-green);">进入绿茵场试训</button>
         </div>
     </div>
 </div>
 
-<div id="screen-hub" class="screen">
-    <div class="top-bar">
-        <div class="time-line">📅 2010年 7月15日</div>
-        <div class="status-row">
-            <span>周薪: €500 | 存款: €2,100</span>
-            <span style="color: var(--accent-green);">🔋 体能: 100%</span>
-        </div>
-    </div>
-    
-    <div class="feed-container">
-        <div class="card">
-            <div class="card-title">📱 队内短信</div>
-            <div class="card-content">
-                <b>周扬 (前腰)：</b><br>
-                “Tom，下午的内部对抗赛教练在场边看着呢，跑位聪明点！”
-            </div>
-            <div class="btn-group">
-                <button class="btn active" onclick="switchScreen('screen-match')" style="justify-content: center;">前往比赛场地 ⚽</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="bottom-nav">
-        <div class="nav-item"><span>📊</span>属性</div>
-        <div class="nav-item active"><span>🏠</span>日常</div>
-        <div class="nav-item" onclick="switchScreen('screen-match')"><span>⚽</span>赛事</div>
-        <div class="nav-item" onclick="switchScreen('screen-manager')"><span>👔</span>执教</div>
-    </div>
-</div>
-
-<div id="screen-match" class="screen">
+<div id="screen-match" class="screen active">
     <div class="top-bar" style="text-align: center;">
         <div style="font-size: 20px; font-weight: bold;">蓝队 1 - 0 红队</div>
         <div class="time-line" style="margin-top: 5px;">⏱ 64:12 | 🔋 85%</div>
     </div>
     
     <div class="feed-container">
-        <div class="text-panel">
+        <div id="match-log" class="text-panel">
             <span style="color: var(--accent-gold);">【关键事件触发！】</span><br>
-            对方造了一个<u>越位陷阱</u>，但边裁并未举旗！你敏锐地反越位成功，单刀赴会！门将正在弃门出击！
+            对方造了一个越位陷阱，但边裁并未举旗！你敏锐地反越位成功，单刀赴会！门将正在弃门出击！<br>
         </div>
         
-        <div class="btn-group">
-            <button class="btn" onclick="getAIDescription('爆射近角')">
+        <div class="btn-group" id="action-buttons">
+            <button class="btn" onclick="executeAction('爆射近角', this)">
                 <div style="display: flex; flex-direction: column; gap: 5px;">
                     <span>[爆射近角] 判定: SHO射门</span>
                     <span class="btn-cost">门将尚未封死角度，大力出奇迹！</span>
                 </div>
                 <span class="btn-chance">60%</span>
             </button>
-            <button class="btn active" onclick="getAIDescription('不停球直接横敲中路给周扬')">
+            <button class="btn active" onclick="executeAction('钟摆过人', this)">
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <span>[钟摆过人] 判定: DRI盘带</span>
+                    <span class="btn-cost">高风险，极高收益，评分暴涨</span>
+                </div>
+                <span class="btn-chance">35%</span>
+            </button>
+            <button class="btn" onclick="executeAction('横传中路', this)">
                 <div style="display: flex; flex-direction: column; gap: 5px;">
                     <span>[横传中路] 判定: PAS传球</span>
                     <span class="btn-cost">队友正在跟进，传过去就是打空门</span>
@@ -211,74 +173,86 @@
     </div>
     
     <div class="bottom-nav">
-        <div class="nav-item" onclick="switchScreen('screen-hub')"><span>🔙</span>返回日常</div>
-    </div>
-</div>
-
-<div id="screen-manager" class="screen">
-    <div class="top-bar">
-        <div class="time-line">📅 2024年 1月10日 (经理办公室)</div>
-        <div class="status-row"><span>资金: €15.5M | 信任: 85%</span></div>
-    </div>
-    <div class="feed-container">
-        <div class="card info">
-            <div class="card-title">📈 球队六边形</div>
-            <div class="stats-grid">
-                <div class="stat-item">进攻火力 <span class="stat-val">82</span></div>
-                <div class="stat-item">防守硬度 <span class="stat-val">65</span></div>
-            </div>
-        </div>
-    </div>
-    <div class="bottom-nav">
-        <div class="nav-item" onclick="switchScreen('screen-hub')"><span>🔙</span>退回球员时代</div>
+        <div class="nav-item"><span>🔙</span>放弃比赛</div>
     </div>
 </div>
 
 <script>
-    // 1. 界面切换函数
+    // 界面切换函数
     function switchScreen(targetScreenId) {
-        // 选中所有的界面，移除它们的 active 激活状态
-        const screens = document.querySelectorAll('.screen');
-        screens.forEach(screen => {
-            screen.classList.remove('active');
-        });
-        
-        // 找到你想去的界面，给它加上 active 状态让它显示出来
-        const targetScreen = document.getElementById(targetScreenId);
-        if (targetScreen) {
-            targetScreen.classList.add('active');
-            // 将界面滚动条重置到顶部
-            targetScreen.scrollTop = 0; 
-        }
+        document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+        document.getElementById(targetScreenId).classList.add('active');
     }
 
-    // 2. 呼叫后端 API 生成解说的函数 (保留之前的代码)
-    async function getAIDescription(playerAction) {
-        // 先给玩家一个交互反馈，说明正在处理
-        alert("系统暗骰中...\n正在呼叫AI解说员，请稍等1-3秒。");
-        
-        const promptText = `你现在是《绿茵纪元》的足球解说员。当前情况：玩家是一名前锋。玩家做出了动作：【${playerAction}】。请用激情的语气写一段50字左右的赛场文字实况播报。`;
+    // 获取比赛日志的容器
+    const matchLog = document.getElementById('match-log');
+    const buttonsContainer = document.getElementById('action-buttons');
+
+    // 酷炫的打字机效果函数
+    function typeWriter(text, element, speed = 30) {
+        return new Promise((resolve) => {
+            let i = 0;
+            element.innerHTML += '<br><br><span style="color: var(--accent-green);">⚽ </span>';
+            const textSpan = document.createElement('span');
+            textSpan.style.color = '#fff';
+            element.appendChild(textSpan);
+            
+            function type() {
+                if (i < text.length) {
+                    textSpan.innerText += text.charAt(i); // 逐字添加
+                    i++;
+                    // 每次打字都自动滚动到最底部
+                    element.scrollTop = element.scrollHeight;
+                    setTimeout(type, speed);
+                } else {
+                    resolve();
+                }
+            }
+            type();
+        });
+    }
+
+    // 执行玩家动作的核心函数
+    async function executeAction(playerAction, clickedButton) {
+        // 1. 禁用所有按钮，防止玩家连点导致网络错乱
+        const allButtons = buttonsContainer.querySelectorAll('.btn');
+        allButtons.forEach(btn => btn.disabled = true);
+
+        // 2. 在日志面板打印玩家的选择
+        matchLog.innerHTML += `<br><br><span style="color: var(--accent-blue);">👉 你选择了：[${playerAction}]</span>`;
+        matchLog.innerHTML += `<br><span style="color: var(--text-sub); font-size: 13px;">系统暗骰中，正在连接云端解说员...</span>`;
+        matchLog.scrollTop = matchLog.scrollHeight; // 滚动到底部
+
+        // 3. 构建提示词
+        const promptText = `你现在是文字策略游戏《绿茵纪元》的足球解说员。当前情况：玩家是一名前锋。玩家做出了动作：【${playerAction}】。请用激情的语气写一段50字以内的赛场实况播报。直接输出解说词正文，不要有任何前缀。`;
 
         try {
+            // 4. 发起真实的网络请求
             const response = await fetch('/.netlify/functions/gemini', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt: promptText })
             });
             
             const data = await response.json();
             
-            // 弹出 API 生成的解说词
             if(data.message) {
-                alert("⚽ 实况播报：\n\n" + data.message);
-                // 播报完可以强制返回主界面，模拟比赛结束
-                switchScreen('screen-hub');
+                // 5. 将生硬的弹窗替换为打字机动画！
+                await typeWriter(data.message, matchLog, 40);
+                
+                // 6. 互动继续：解说完成后，可以在这里更新按钮选项（这里作为演示，恢复按钮可点击）
+                matchLog.innerHTML += `<br><br><span style="color: var(--accent-gold);">[回合结束。比赛继续运转...]</span>`;
+                matchLog.scrollTop = matchLog.scrollHeight;
             } else {
-                alert("报错了: " + JSON.stringify(data));
+                matchLog.innerHTML += `<br><br><span style="color: #ef4444;">[解说员麦克风故障...]</span>`;
             }
 
         } catch (error) {
             console.error("请求失败", error);
-            alert("AI网络连接失败，请检查Netlify控制台或API Key配置。");
+            matchLog.innerHTML += `<br><br><span style="color: #ef4444;">[网络中断，VAR失去信号。]</span>`;
+        } finally {
+            // 无论成功失败，恢复按钮状态（真实游戏中，这里应该替换为下一回合的新选项）
+            allButtons.forEach(btn => btn.disabled = false);
         }
     }
 </script>
